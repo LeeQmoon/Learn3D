@@ -1,0 +1,12 @@
+## some files built by vs2017
+
+*.vs
+*.git
+*.exe
+*.ilk
+*.pdb
+
+*.tlog
+*.log
+*.obj
+*.idb
