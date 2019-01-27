@@ -12,12 +12,9 @@ using namespace std;
 const int width = 800;
 const int height = 600;
 
+
 GLboolean switchOne = false;//此开关控制出入光标窗口
-GLboolean switchTwo = false;//此开关控制出入窗口后必须点击鼠标左键方可进行视角切换
 GLboolean firstmouse = true;//此开关控制首次进入窗口设置光标，避免跳跃
-GLdouble currenttime = 0.0f;
-GLdouble lasttime = 0.0f;
-GLdouble deltatime = 0.0f;
 GLdouble lastX = width / 2.0f;
 GLdouble lastY = height / 2.0f;
 
@@ -27,7 +24,6 @@ Camera camera;
 void key_callback(GLFWwindow *window, GLint key, GLint scancode, GLint action, GLint mods);
 void mouse_Movement_callback(GLFWwindow *window, GLdouble xops, GLdouble yos);
 void mouse_Scroll_callback(GLFWwindow *window, GLdouble xoffset, GLdouble yoffset);
-void mouse_Button_callback(GLFWwindow *window, GLint button, GLint action, GLint mods);
 void cursor_Enter_callback(GLFWwindow *window, GLint enter);
 
 GLfloat vertexF[] = {
@@ -100,7 +96,6 @@ int main()
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_Movement_callback);
 	glfwSetScrollCallback(window, mouse_Scroll_callback);
-	glfwSetMouseButtonCallback(window, mouse_Button_callback);
 	glfwSetCursorEnterCallback(window, cursor_Enter_callback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -126,6 +121,7 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+	long int count = 0;
 
 
 	//纹理对象
@@ -161,19 +157,20 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexF), vertexF, GL_STATIC_DRAW);//这也就跟上面初始化数组时相对应，上面是[],未自行指定，
 																			//由数据指定，即可使用sizeof运算符
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	//第一个参数：属性index，与着色器中分配的一样
-	//第二个：一个属性元素有几个凑成
-	//第三个：组成元素的数据类型
-	//第四个：是否标准化  
-	//第五个：步长 是指某顶点属性第二次出现的位置相对于第一次出现的位置需要跨越的字节数
-	//第六：offset 指某属性第一次出现的位置
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);//第一个参数：属性index，与着色器中分配的一样
+	                                                                            //第二个：一个属性元素有几个凑成
+	                                                                           //第三个：组成元素的数据类型
+	                                                                          //第四个：是否标准化  
+	                                                                         //第五个：步长 是指某顶点属性第二次出现的位置相对于第一次出现的位置需要跨越的字节数
+	                                                                        //第六：offset 指某属性第一次出现的位置
+	
 
 	glEnableVertexAttribArray(0);
 
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));//注意最后一个参数
 	glEnableVertexAttribArray(1);
 
+	
 
 	GLuint texture2;
 	glGenTextures(1, &texture2);
@@ -197,8 +194,7 @@ int main()
 	}
 	stbi_image_free(data);//释放图片资源
 
-
-
+	
 
 	glBindVertexArray(0);
 	shader myshader("vshader.txt", "fshaderOne.txt");
@@ -209,60 +205,27 @@ int main()
 	mshader.use();
 
 
+	
 	glm::mat4 model;
-	model = glm::translate(model, glm::vec3(-0.6f, 0.0f, 0.0f));
-	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-	glm::mat4 view;
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 	glm::mat4 projection;
-
-
-
+	projection = glm::perspective(glm::radians(camera.fov), (float)width / (float)height, 0.1f, 100.0f);//最后两个参数不懂哦、
+	
+	
 	while (!glfwWindowShouldClose(window)) {
+		// (0，0，1）
+		// (0，0，0）
+		// 速度-0.01 m/s
+		// p = v * t
 
-
-		currenttime = glfwGetTime();
-		deltatime = currenttime - lasttime;
-		lasttime = currenttime;
 
 		glClearColor(0.0f, 0.2f, 0.4f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		camera.Key_Movement();
+		
+		glm::mat4 view;
 		view = camera.GetViewMatrix();
-		projection = glm::perspective(glm::radians(camera.fov), (float)width / (float)height, 0.1f, 100.0f);//最后两个参数不懂哦、
-
-		cout << "model: " << endl;
-		for (int i = 0; i < 4; i++) {
-
-			for (int j = 0; j < 4; j++)
-				cout << model[i][j] << " ";
-
-			cout << endl;
-		}
-
-		cout << endl << endl;
-
-		cout << "view: " << endl;
-		for (int i = 0; i < 4; i++) {
-
-			for (int j = 0; j < 4; j++)
-				cout << view[i][j] << " ";
-
-			cout << endl;
-		}
-		cout << endl << endl;
-
-
-		cout << "projection: " << endl;
-		for (int i = 0; i < 4; i++) {
-
-			for (int j = 0; j < 4; j++)
-				cout << view[i][j] << " ";
-
-			cout << endl;
-		}
-		cout << endl << endl;
-
-
 
 
 		glBindTexture(GL_TEXTURE_2D, texture1);
@@ -282,9 +245,11 @@ int main()
 		mshader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 12);
 
-
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		
 
 	}
 
@@ -294,8 +259,6 @@ int main()
 	glDeleteVertexArrays(2, VAO);
 
 
-
-
 	return 0;
 }
 
@@ -303,21 +266,17 @@ int main()
 void key_callback(GLFWwindow *window, GLint key, GLint scancode, GLint action, GLint mods)
 {
 
-	if (switchOne&&switchTwo) {
-
-
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-			glfwWindowShouldClose(window);
-		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-			camera.Key_Movement(GLFW_KEY_W, deltatime);
-		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-			camera.Key_Movement(GLFW_KEY_S, deltatime);
-		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-			camera.Key_Movement(GLFW_KEY_A, deltatime);
-		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-			camera.Key_Movement(GLFW_KEY_D, deltatime);
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key >= 0 && key < 1024)
+	{
+		//设置按下/释放键为true或false
+		if (action == GLFW_PRESS)
+			camera.key_status[key] = true;
+		else if (action == GLFW_RELEASE)
+			camera.key_status[key] = false;
 	}
-
+	
 }
 
 
@@ -334,7 +293,7 @@ void mouse_Movement_callback(GLFWwindow *window, GLdouble xpos, GLdouble ypos)
 	}
 
 
-	if (switchOne&&switchTwo) {
+	if (switchOne) {
 
 		xoffset = xpos - lastX;
 		yoffset = lastY - ypos;//注意此处  屏幕坐标的y轴自顶向下增大，而照相机坐标系的y轴自顶向下减小，二者刚好相反了	
@@ -355,20 +314,9 @@ void mouse_Movement_callback(GLFWwindow *window, GLdouble xpos, GLdouble ypos)
 
 void mouse_Scroll_callback(GLFWwindow *window, GLdouble xoffset, GLdouble yoffset)
 {
-	if (switchOne&&switchTwo)
 		camera.Cursor_Scoll(yoffset);
 }
 
-void mouse_Button_callback(GLFWwindow *window, GLint button, GLint action, GLint mods)
-{
-
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-	{
-		switchTwo = true;
-		firstmouse = true;
-	}
-
-}
 
 void cursor_Enter_callback(GLFWwindow *window, GLint enter)
 {
@@ -380,7 +328,7 @@ void cursor_Enter_callback(GLFWwindow *window, GLint enter)
 	else {
 
 		switchOne = false;
-		switchTwo = false;
+	
 	}
 
 }
